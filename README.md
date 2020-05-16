@@ -13,15 +13,15 @@ Také existuje [jiná velmi podobná Pythoní verze](https://github.com/yaqwsx/u
 ## Klíčové vlastnosti
 
 * Sám pozná downloady, kde Ulož.to umožňuje stahovat bez CAPTCHA kódů
+* Automaticky opisuje CAPTCHA kódy, pokud jsou splněny všechny nároky a je zvolen parametr --captcha a
 * V ostatních případech na začátku postupně vyptá od uživatele opsání CAPTCHA kódů
-  * Pokud by někdo chtěl natrénovat neuronku, tak se kód dá jednoduše upravit a volat externí řešič ;-)
 * Umí navazovat přerušená stahování (pokud se zachová stejný počet částí)
 * Konzolový status panel
 
 ## Použití
 
 ```shell
-./ulozto_downloader.py --parts 15 'https://ulozto.cz/file/TKvQVDFBEhtL/debian-9-6-0-amd64-netinst-iso'
+./ulozto_downloader.py --parts 15 --captcha m 'https://ulozto.cz/file/TKvQVDFBEhtL/debian-9-6-0-amd64-netinst-iso'
 ```
 
 ## Requirements
@@ -30,3 +30,7 @@ Také existuje [jiná velmi podobná Pythoní verze](https://github.com/yaqwsx/u
 * Nějaké knihovny pro Python 3:
   * Tkinter (balík `python3-tk` na Debianu)
   * Pillow s ImageTK (balík `python3-pil.imagetk` na Debianu)
+* Pro funkční automatické opisování:
+  * Tensorflow
+  * Numpy
+  * [Vytrénovaný model](https://github.com/JanPalasek/ulozto-captcha-breaker/releases) ve stejné složce jako ulozto_downloader.py

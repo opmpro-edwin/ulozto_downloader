@@ -1,4 +1,6 @@
 #!/usr/bin/python3
+# -*- coding: utf-8 -*-
+
 """Uloz.to quick multiple sessions downloader.
 
 It is needed to install these two packages (names of debian packages, for other systems they may be different):
@@ -16,10 +18,22 @@ from datetime import timedelta
 from urllib.parse import urlparse
 import requests
 
+
 # Imports for GUI:
 import tkinter as tk
 from PIL import Image, ImageTk
 from io import BytesIO
+
+# Optionally import Tensorflow, Numpy and model folder:
+try:
+    import tensorflow
+    import numpy
+    os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3' 
+    model = tensorflow.keras.models.load_model(os.path.join(sys.path[0], "model"))
+    automatizace = True
+except:
+    automatizace = False
+
 
 CLI_STATUS_STARTLINE = 6
 XML_HEADERS = {"X-Requested-With": "XMLHttpRequest"}
@@ -89,7 +103,7 @@ def parse_page(url):
     return filename, slowDownloadURL, captchaChallengeURL, r.cookies
 
 
-def get_captcha_download_link(url, print_func=print):
+def get_captcha_download_link(url, captcha ,print_func=print):
     """Get download link from given page URL, it calls CAPTCHA related functions.
 
         Arguments:
@@ -103,7 +117,11 @@ def get_captcha_download_link(url, print_func=print):
     print_func("CAPTCHA image challenge...")
     while True:
         captcha_image, captcha_data, cookies = get_new_captcha(url)
-        captcha_answer = get_captcha_user_input(captcha_image)
+        if captcha == "m":
+            captcha_answer = get_captcha_user_input(captcha_image)
+        elif captcha == "a":
+            captcha_answer = get_captcha_automatic_input(captcha_image)
+
         # print_func("CAPTCHA input from user: {}".format(captcha_answer))
         ok, downloadURL = post_captcha_answer(url, captcha_data, captcha_answer, cookies)
         if ok:
@@ -165,6 +183,7 @@ def post_captcha_answer(url, captcha_data, captcha_answer, cookies):
 
 
 def get_captcha_user_input(img_url):
+
     """Display captcha from given URL and ask user for input in GUI window.
 
         Arguments:
@@ -205,7 +224,46 @@ def get_captcha_user_input(img_url):
     root.destroy()
     return value
 
+def get_captcha_automatic_input(img_url):
+    """Cracks Uloz.to captcha using pretrained model.
 
+    Arguments:
+        img_url (str): URL of the image with CAPTCHA
+
+    Returns:
+        str: AI answer to the CAPTCHA
+    """
+    if automatizace == False:
+        print('Cannot proceed. Check if Tensorflow & Numpy are installed and if model folder is in the same directory as a script ')
+        sys.exit(1)
+    u = requests.get(img_url)
+    raw_data = u.content
+    img = Image.open(BytesIO(raw_data))
+    img.load()
+    img = numpy.asarray( img, dtype="int32" )
+    img = (img / 255).astype(numpy.float32)
+    r, g, b = img[:, :, 0], img[:, :, 1], img[:, :, 2]
+    input = 0.299 * r + 0.587 * g + 0.114 * b
+    # input has now shape (70, 175)
+    # we modify dimensions to match model's input
+    input = numpy.expand_dims(input, 0)
+    input = numpy.expand_dims(input, -1)
+    # input is now of shape (batch_size, 70, 175, 1)
+    # output will have shape (batch_size, 4, 26)
+    output = model.predict(input)
+    # now get labels
+
+    labels_indices = numpy.argmax(output, axis=2)
+    available_chars = "abcdefghijklmnopqrstuvwxyz"
+    def decode(li):
+        result = []
+        for char in li:
+            result.append(available_chars[char])
+        return "".join(result)
+
+    # variable labels will contain read captcha codes
+    labels = [decode(x) for x in labels_indices]
+    return labels
 def print_status(id, text):
     """Print status line for specified worker to the console.
 
@@ -264,7 +322,7 @@ def download_part(part):
     ))
 
 
-def download(url, parts=10, target_dir=""):
+def download(url, parts=10, target_dir="", captcha="m"):
     """Download file from Uloz.to using multiple parallel downloads.
 
         Arguments:
@@ -311,7 +369,7 @@ def download(url, parts=10, target_dir=""):
 
     if isCAPTCHA:
         print("CAPTCHA protected download - CAPTCHA challenges will be displayed")
-        download_url = get_captcha_download_link(captchaChallengeURL)
+        download_url = get_captcha_download_link(captchaChallengeURL, captcha)
     else:
         print("You are lucky, this is slow direct download without CAPTCHA :)")
         download_url = slowDownloadURL
@@ -366,7 +424,7 @@ def download(url, parts=10, target_dir=""):
                 download_url = None
             else:
                 print_status(id, "Solving CAPTCHA...")
-                part['download_url'] = get_captcha_download_link(captchaChallengeURL, print_func=lambda msg: print_status(id, msg))
+                part['download_url'] = get_captcha_download_link(captchaChallengeURL, captcha, print_func=lambda msg: print_status(id, msg))
         else:
             part['download_url'] = slowDownloadURL
 
@@ -410,7 +468,8 @@ if __name__ == "__main__":
     parser.add_argument('url', metavar='URL', type=str, help="URL from Uloz.to (tip: enter in 'quotes' because the URL contains ! sign)")
     parser.add_argument('--parts', metavar='N', type=int, default=10, help='Number of parts that will be downloaded in parallel')
     parser.add_argument('--output', metavar='DIRECTORY', type=str, default="./", help='Target directory')
+    parser.add_argument('--captcha',  metavar='METHOD', type=str, default="m", help='How to resolve CAPTCHA code. Manually [m] or Automatically [a].')
 
     args = parser.parse_args()
 
-    download(args.url, args.parts, args.output)
+    download(args.url, args.parts, args.output, args.captcha)
