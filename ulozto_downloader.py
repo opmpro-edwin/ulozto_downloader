@@ -117,10 +117,12 @@ def get_captcha_download_link(url, captcha ,print_func=print):
     print_func("CAPTCHA image challenge...")
     while True:
         captcha_image, captcha_data, cookies = get_new_captcha(url)
-        if captcha == "m":
-            captcha_answer = get_captcha_user_input(captcha_image)
-        elif captcha == "a":
+
+        if captcha == "a":
             captcha_answer = get_captcha_automatic_input(captcha_image)
+        else:
+            captcha_answer = get_captcha_user_input(captcha_image)
+
 
         # print_func("CAPTCHA input from user: {}".format(captcha_answer))
         ok, downloadURL = post_captcha_answer(url, captcha_data, captcha_answer, cookies)
@@ -468,7 +470,7 @@ if __name__ == "__main__":
     parser.add_argument('url', metavar='URL', type=str, help="URL from Uloz.to (tip: enter in 'quotes' because the URL contains ! sign)")
     parser.add_argument('--parts', metavar='N', type=int, default=10, help='Number of parts that will be downloaded in parallel')
     parser.add_argument('--output', metavar='DIRECTORY', type=str, default="./", help='Target directory')
-    parser.add_argument('--captcha',  metavar='METHOD', type=str, default="m", help='How to resolve CAPTCHA code. Manually [m] or Automatically [a].')
+    parser.add_argument('--captcha',  metavar='M', type=str, default="m", help='How to resolve CAPTCHA code. Manually [m] or Automatically [a].')
 
     args = parser.parse_args()
 

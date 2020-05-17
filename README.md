@@ -14,6 +14,8 @@ Také existuje [jiná velmi podobná Pythoní verze](https://github.com/yaqwsx/u
 
 * Sám pozná downloady, kde Ulož.to umožňuje stahovat bez CAPTCHA kódů
 * Automaticky opisuje CAPTCHA kódy, pokud jsou splněny všechny nároky a je zvolen parametr --captcha a
+
+  **Tensorflow instalovaný pomocí Pipu vyžaduje AVX instrukce (Intel Sandy Bridge a novější)**
 * V ostatních případech na začátku postupně vyptá od uživatele opsání CAPTCHA kódů
 * Umí navazovat přerušená stahování (pokud se zachová stejný počet částí)
 * Konzolový status panel
